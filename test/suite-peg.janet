@@ -264,6 +264,7 @@
 (marshpeg ~(cmt "abcdf" ,identity))
 (marshpeg '(group "abc"))
 (marshpeg '(sub "abcdf" "abc"))
+(marshpeg '(sep "," (+ "a" "b" "c")))
 
 # Peg swallowing errors
 # 159651117
@@ -708,6 +709,41 @@
   ~(* (sub "abc" "ab") "d")
   "abcdef"
   @[])
+
+(test "sep: basic functionality"
+  ~(sep "," '1)
+  "a,b,c"
+  @["a" "b" "c"])
+
+(test "sep: does not consume separator if subpattern doesn't match afterwards"
+  ~(* (sep "," "a") '(to -1))
+  "a,a,b,c"
+  @[",b,c"])
+
+(test "sep: drops captures from separator pattern"
+  ~(sep '"," '1)
+  "a,b,c"
+  @["a" "b" "c"])
+
+(test "sep: can match zero times"
+  ~(* (sep "," "a") '(to -1))
+  "x,y,z"
+  @["x,y,z"])
+
+(test "sep: does not consume trailing separator"
+  ~(* (sep "," '1) '(to -1))
+  "a,b,c,"
+  @["a" "b" "c" ","])
+
+(test "sep: can match empty subpatterns"
+  ~(sep "," ':w*)
+  ",a,,bar,,,c,,"
+  @["" "a" "" "bar" "" "" "c" "" ""])
+
+(test "sep: subpattern is limited to only text before the separator"
+  ~(sep "," '(to -1))
+  "a,,bar,c"
+  @["a" "" "bar" "c"])
 
 (end-suite)
 
