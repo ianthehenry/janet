@@ -266,6 +266,7 @@
 (marshpeg '(sub "abcdf" "abc"))
 (marshpeg '(* (sub 1 1)))
 (marshpeg '(split "," (+ "a" "b" "c")))
+(marshpeg '(til :s+ :w+))
 
 # Peg swallowing errors
 # 159651117
@@ -758,6 +759,31 @@
   ~(split :s+ '(to -1))
   "a   b      c"
   @["a" "b" "c"])
+
+(test "til: find a separator, match before it, then advance past it"
+  ~(* (til "=" '(to -1)) '(to -1))
+  "foo=bar"
+  @["foo" "bar"])
+
+(test "til: captures in the separator are dropped"
+  ~(til '"=" '(to -1))
+  "foo=bar"
+  @["foo"])
+
+(test "til: if separator is not found, pattern fails"
+  ~(til "=" '(to -1))
+  "foo bar"
+  nil)
+
+(test "til: if subpattern doesn't match, pattern fails"
+  ~(til "=" "x")
+  "foo=bar"
+  nil)
+
+(test "til: separator can be an arbitrary PEG"
+  ~(til :s+ '(to -1))
+  "foo     bar"
+  @["foo"])
 
 (end-suite)
 

@@ -548,6 +548,41 @@ tail:
             return text;
         }
 
+        case RULE_TIL: {
+            const uint32_t *rule_terminator = s->bytecode + rule[1];
+            const uint32_t *rule_subpattern = s->bytecode + rule[2];
+
+            const uint8_t *text_start = text;
+            const uint8_t *terminator_end = NULL;
+            CapState cs = cap_save(s);
+            down1(s);
+            while (text <= s->text_end) {
+                terminator_end = peg_rule(s, rule_terminator, text);
+                cap_load(s, cs);
+                if (terminator_end) {
+                    break;
+                }
+                text++;
+            }
+            up1(s);
+
+            if (!terminator_end) {
+                return NULL;
+            }
+            const uint8_t *saved_end = s->text_end;
+            s->text_end = text;
+            down1(s);
+            const uint8_t *subpattern_end = peg_rule(s, rule_subpattern, text_start);
+            up1(s);
+            s->text_end = saved_end;
+
+            if (!subpattern_end) {
+                return NULL;
+            }
+
+            return terminator_end;
+        }
+
         case RULE_REPLACE:
         case RULE_MATCHTIME: {
             uint32_t tag = rule[3];
@@ -1208,6 +1243,14 @@ static void spec_split(Builder *b, int32_t argc, const Janet *argv) {
     emit_2(r, RULE_SPLIT, subrule1, subrule2);
 }
 
+static void spec_til(Builder *b, int32_t argc, const Janet *argv) {
+    peg_fixarity(b, argc, 2);
+    Reserve r = reserve(b, 3);
+    uint32_t subrule1 = peg_compile1(b, argv[0]);
+    uint32_t subrule2 = peg_compile1(b, argv[1]);
+    emit_2(r, RULE_TIL, subrule1, subrule2);
+}
+
 #ifdef JANET_INT_TYPES
 #define JANET_MAX_READINT_WIDTH 8
 #else
@@ -1294,6 +1337,7 @@ static const SpecialPair peg_specials[] = {
     {"split", spec_split},
     {"sub", spec_sub},
     {"thru", spec_thru},
+    {"til", spec_til},
     {"to", spec_to},
     {"uint", spec_uint_le},
     {"uint-be", spec_uint_be},
@@ -1629,6 +1673,7 @@ static void *peg_unmarshal(JanetMarshalContext *ctx) {
                 break;
             case RULE_SUB:
             case RULE_SPLIT:
+            case RULE_TIL:
                 /* [rule, rule] */
                 if (rule[1] >= blen) goto bad;
                 if (rule[2] >= blen) goto bad;
