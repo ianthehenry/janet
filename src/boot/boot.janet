@@ -2326,7 +2326,7 @@
 
 ###
 ###
-### Default PEG patterns
+### PEGs
 ###
 ###
 
@@ -2369,6 +2369,12 @@
      :W* (any :W)})
 
 (setdyn *peg-grammar* default-peg-grammar)
+
+(defn peg/split
+  "Returns an array of substrings separated by the provided pattern."
+  [patt input &opt start & args]
+  (default start 0)
+  (peg/match ~(split ,patt (capture (to -1))) input start ;args))
 
 ###
 ###

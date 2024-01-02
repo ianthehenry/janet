@@ -729,6 +729,10 @@ tail:
             return result;
         }
 
+      case RULE_TO_END: {
+        return s->text_end;
+      }
+
     }
 }
 
@@ -879,7 +883,10 @@ static void emit_bytes(Builder *b, uint32_t op, int32_t len, const uint8_t *byte
     memcpy(b->bytecode + next_rule + 2, bytes, len);
 }
 
-/* For fixed arity rules of arities 1, 2, and 3 */
+/* For fixed arity rules of arities 0, 1, 2, and 3 */
+static void emit_0(Reserve r, uint32_t op) {
+    emit_rule(r, op, 0, NULL);
+}
 static void emit_1(Reserve r, uint32_t op, uint32_t arg) {
     emit_rule(r, op, 1, &arg);
 }
@@ -1053,10 +1060,22 @@ static void spec_error(Builder *b, int32_t argc, const Janet *argv) {
     }
 }
 static void spec_to(Builder *b, int32_t argc, const Janet *argv) {
-    spec_onerule(b, argc, argv, RULE_TO);
+    peg_fixarity(b, argc, 1);
+    if (janet_equals(argv[0], janet_wrap_integer(-1))) {
+        Reserve r = reserve(b, 1);
+        emit_0(r, RULE_TO_END);
+    } else {
+        spec_onerule(b, argc, argv, RULE_TO);
+    }
 }
 static void spec_thru(Builder *b, int32_t argc, const Janet *argv) {
-    spec_onerule(b, argc, argv, RULE_THRU);
+    peg_fixarity(b, argc, 1);
+    if (janet_equals(argv[0], janet_wrap_integer(-1))) {
+        Reserve r = reserve(b, 1);
+        emit_0(r, RULE_TO_END);
+    } else {
+        spec_onerule(b, argc, argv, RULE_THRU);
+    }
 }
 static void spec_drop(Builder *b, int32_t argc, const Janet *argv) {
     spec_onerule(b, argc, argv, RULE_DROP);

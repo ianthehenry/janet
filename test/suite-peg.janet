@@ -535,6 +535,14 @@
 (assert (not (peg/find '"t/" p)) "peg find 2")
 (assert (deep= (peg/find-all '"/" p) @[0 4 10 14]) "peg find-all")
 
+# Peg split
+(assert (deep= (peg/split :s+ "a    b c") @["a" "b" "c"]) "peg/split")
+(assert (deep= (peg/split :s+ "a    b c" 2) @["" "b" "c"]) "peg/split start argument")
+(assert (deep= (peg/split ~(lenprefix (argument 0) " ") "a  b  c" 0 2)
+  @["a" "b" "c"]) "peg/split extra arguments")
+(assert (deep= (peg/split ~(lenprefix (argument 0) " ") "a  b  c" 0 1)
+  @["a" "" "b" "" "c"]) "peg/split extra arguments")
+
 # Peg replace and replace-all
 # e548e1f6e
 (defn check-replacer
